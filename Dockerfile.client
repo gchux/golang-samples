@@ -1,0 +1,22 @@
+FROM golang:latest AS builder
+
+WORKDIR /grpc
+
+COPY ./go.mod go.mod
+COPY ./go.sum go.sum
+COPY ./client.go main.go
+
+ENV GO111MODULE=on
+
+RUN go mod tidy -compat=1.22.4
+RUN CGO_ENABLED=0 GOOOS=linux go build -o /grpc/client
+
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=builder /grpc/client ./grpc_client
+
+ENTRYPOINT ["/root/grpc_client"]
+
+CMD ["-addr", "localhost:50051", "-name", "test"]

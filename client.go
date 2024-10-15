@@ -35,7 +35,9 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+	"google.golang.org/grpc/metadata"
 	grpcMetadata "google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -89,10 +91,18 @@ func main() {
 
 	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+*token)
 
+	helloRequest := &pb.HelloRequest{Name: *name}
+
+	out, _ := proto.Marshal(helloRequest)
+	os.WriteFile("/tmp/hello-request.bin", out, 0644)
+
+	var header, trailer metadata.MD
 	// Contact the server and print out its response.
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *name})
+	r, err := c.SayHello(ctx, helloRequest, grpc.Header(&header), grpc.Trailer(&trailer))
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
-	log.Printf("Greeting: %s", r.GetMessage())
+	log.Printf("Greeting: %s\n", r.GetMessage())
+	log.Printf("headers: %+v\n", header)
+	log.Printf("trailers: %+v\n", trailer)
 }

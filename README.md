@@ -40,7 +40,7 @@ docker push ${LOCATION}-pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${IMAGE
 ### DEPLOY THE IMAGE
 
 - https://cloud.google.com/run/docs/deploying#service
-- set `--use-http2`: http://cloud/sdk/gcloud/reference/run/deploy#--[no-]use-http2
+- (_optional_) set `--use-http2`: http://cloud/sdk/gcloud/reference/run/deploy#--[no-]use-http2
 
 ### USE THE CLIENT
 

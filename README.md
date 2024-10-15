@@ -49,3 +49,11 @@ docker run -it --rm grpc-hello-client:latest \
   -addr="${SERVICE_NAME}-${PROJECT_NUMBER}.${REGION}.run.app:443" -name=test \
   -token=$(gcloud auth print-identity-token | tr -d '\n') -secure=true -timeout=30 -id=test-rpc
 ```
+
+### USE [grpcurl](https://github.com/fullstorydev/grpcurl)
+
+```sh
+grpcurl -vv -proto helloworld.proto -d '{"name":"test"}' \
+  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  "${SERVICE_NAME}-${PROJECT_NUMBER}.${REGION}.run.app:443" helloworld.Greeter/SayHello
+```

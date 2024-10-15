@@ -17,6 +17,7 @@
  */
 
 // src: https://github.com/grpc/grpc-go/blob/master/examples/helloworld/greeter_client/main.go
+// ref: https://cloud.google.com/run/docs/triggering/grpc
 
 // Package main implements a client for Greeter service.
 package main
@@ -31,12 +32,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc/metadata"
 	grpcMetadata "google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -45,70 +48,110 @@ const (
 )
 
 var (
-	addr   = flag.String("addr", "localhost:8080", "the address to connect to")
-	name   = flag.String("name", defaultName, "Name to greet")
-	secure = flag.Bool("secure", false, "use TLS")
-	token  = flag.String("token", "", "Identity Token")
+	addr    = flag.String("addr", "localhost:8080", "the address to connect to")
+	name    = flag.String("name", defaultName, "Name to greet")
+	secure  = flag.Bool("secure", true, "gRPC secure transport")
+	token   = flag.String("token", "", "bearer token to be set in Authorization header")
+	timeout = flag.Uint("timeout", 30, "rpc deadline in seconds")
+	id      = flag.String("id", "", "RPC ID added as metadata")
 )
 
-func main() {
-	flag.Parse()
-
-	var opts []grpc.DialOption
-
-	if *addr != "" {
-		opts = append(opts, grpc.WithAuthority(*addr))
-	}
-
-	fmt.Println(*addr)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if *secure {
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	} else {
-		// Note: On the Windows platform, use of x509.SystemCertPool() requires
-		// go version 1.18 or higher.
+func addTransportCredentials(secure bool, opts []grpc.DialOption) []grpc.DialOption {
+	if secure {
 		systemRoots, err := x509.SystemCertPool()
 		if err != nil {
-			os.Exit(1)
+			log.Fatalf("x509 error: %v", err)
 		}
 		cred := credentials.NewTLS(&tls.Config{
 			RootCAs: systemRoots,
 		})
-		opts = append(opts, grpc.WithTransportCredentials(cred))
+		return append(opts, grpc.WithTransportCredentials(cred))
 	}
+	return append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+}
 
-	// Set up a connection to the server.
-	// conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func saveRequestProto(requestProto *pb.HelloRequest) (int, error) {
+	out, _ := proto.Marshal(requestProto)
+	file, err := os.OpenFile("/tmp/hello-request.pb.bin",
+		os.O_RDWR|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0o644)
+	if err != nil {
+		log.Fatalf("failed to write rpc proto request: %v", err)
+	}
+	defer func() {
+		file.Sync()
+		file.Close()
+	}()
+	return file.Write(out)
+}
+
+func withIdentityToken(ctx context.Context, idToken *string) context.Context {
+	if *idToken != "" {
+		return grpcMetadata.AppendToOutgoingContext(ctx,
+			"Authorization", fmt.Sprintf("Bearer %s", *idToken))
+	}
+	return ctx
+}
+
+func withID(ctx context.Context, rpcID *string) context.Context {
+	id := *rpcID
+	if id == "" {
+		id = uuid.New().String()
+	}
+	return grpcMetadata.AppendToOutgoingContext(ctx, "x-rpc-id", id)
+}
+
+func main() {
+	flag.Parse()
+
+	opts := []grpc.DialOption{grpc.WithAuthority(*addr)}
+
+	opts = addTransportCredentials(*secure, opts)
+
 	conn, err := grpc.NewClient(*addr, opts...)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewGreeterClient(conn)
-
-	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+*token)
+	rpcClient := pb.NewGreeterClient(conn)
 
 	helloRequest := &pb.HelloRequest{Name: *name}
 
-	out, _ := proto.Marshal(helloRequest)
-	file, err := os.OpenFile("/tmp/hello-request.bin", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o644)
-	if err != nil {
-		panic(err)
+	var sizeOfRequestProto int = 0
+	if sizeOfRequestProto, err = saveRequestProto(helloRequest); err != nil {
+		log.Fatalf("failed to write request proto: %v\n", err)
 	}
-	defer file.Close()
-	file.Write(out)
-	file.Sync()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*timeout)*time.Second)
+	defer cancel()
+
+	md := grpcMetadata.Pairs("timestamp", time.Now().Format(time.RFC3339Nano))
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	ctx = withID(ctx, id)
+	ctx = withIdentityToken(ctx, token)
+
+	md, _ = grpcMetadata.FromOutgoingContext(ctx)
+
+	log.Printf("%s[%+v] | meta: %+v | size: %d\n",
+		helloRequest.ProtoReflect().Descriptor().FullName(),
+		protojson.Format(helloRequest), md, sizeOfRequestProto)
 
 	var header, trailer metadata.MD
-	// Contact the server and print out its response.
-	r, err := c.SayHello(ctx, helloRequest, grpc.Header(&header), grpc.Trailer(&trailer))
+
+	startOfRPC := time.Now()
+	// see: https://github.com/grpc/grpc-go/blob/v1.67.1/examples/features/metadata/client/main.go#L51
+	rpcResponse, err := rpcClient.SayHello(ctx, helloRequest,
+		grpc.Header(&header), grpc.Trailer(&trailer))
+
+	log.Printf("latency: %+v\n", time.Since(startOfRPC))
 	log.Printf("headers: %+v\n", header)
 	log.Printf("trailers: %+v\n", trailer)
+
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Fatalf("rpc failed: %v\n", err)
 	}
-	log.Printf("Greeting: %s\n", r.GetMessage())
+
+	log.Printf("response: [%+v]\n",
+		rpcResponse.ProtoReflect().Descriptor().FullName(),
+		protojson.Format(rpcResponse))
 }

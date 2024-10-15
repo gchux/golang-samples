@@ -46,5 +46,6 @@ docker push ${LOCATION}-pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${IMAGE
 
 ```sh
 docker run -it --rm grpc-hello-client:latest \
-  -addr '${SERVICE_NAME}-${PROJECT_NUMBER}.${REGION}.run.app:443" -name test
+  -addr="${SERVICE_NAME}-${PROJECT_NUMBER}.${REGION}.run.app:443" -name=test \
+  -secure=false -token=$(gcloud auth print-identity-token | tr -d '\n')
 ```

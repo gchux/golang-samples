@@ -94,15 +94,21 @@ func main() {
 	helloRequest := &pb.HelloRequest{Name: *name}
 
 	out, _ := proto.Marshal(helloRequest)
-	os.WriteFile("/tmp/hello-request.bin", out, 0644)
+	file, err := os.OpenFile("/tmp/hello-request.bin", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	file.Write(out)
+	file.Sync()
 
 	var header, trailer metadata.MD
 	// Contact the server and print out its response.
 	r, err := c.SayHello(ctx, helloRequest, grpc.Header(&header), grpc.Trailer(&trailer))
+	log.Printf("headers: %+v\n", header)
+	log.Printf("trailers: %+v\n", trailer)
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
 	log.Printf("Greeting: %s\n", r.GetMessage())
-	log.Printf("headers: %+v\n", header)
-	log.Printf("trailers: %+v\n", trailer)
 }

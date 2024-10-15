@@ -1,4 +1,4 @@
-# Go Hello World gRPC server
+# Go Hello World gRPC server & client
 
 source code: https://github.com/grpc/grpc-go/tree/master/examples/helloworld
 

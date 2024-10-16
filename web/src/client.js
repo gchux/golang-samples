@@ -34,7 +34,7 @@ class GrpcClientProvider {
   // client takes 3 arguments to instantiate
   constructor(client, host, port, id) {
     this.client = client;
-    this.defaultServer = `${host}:${port}`;
+    this.defaultServer = `https://${host}:${port}`;
     this.clientID = id;
   }
 
@@ -106,5 +106,5 @@ window['grpc_client'] = {
   get: () => clientProvider.defaultClient(),
   sayHello: (name) => exec(clientProvider.defaultClient(), newRequest(name)),
   sayHello_withToken: (token) => exec(clientProvider.authorizedClient(token), newRequest(name)),
-  sayHello_withServerAndToken: (host, port, token) => exec(clientProvider.authorizedClientForServer(`${host}:${port}`, token), newRequest(name)),
+  sayHello_withServerAndToken: (host, port, token) => exec(clientProvider.authorizedClientForServer(`https://${host}:${port}`, token), newRequest(name)),
 }

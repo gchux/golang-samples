@@ -1,6 +1,6 @@
 ARG GOLANG_VERSION=1.22.7
 
-FROM --platform=linux/amd64 golang:${GOLANG_VERSION}-bookworm AS builder
+FROM --platform=linux/amd64 golang:${GOLANG_VERSION}-bookworm
 
 ARG GOLANG_VERSION=1.22.7
 ARG BIN_NAME=grpc_client
@@ -10,28 +10,19 @@ WORKDIR /app
 COPY ./go.mod go.mod
 COPY ./go.sum go.sum
 COPY ./client.go main.go
-COPY ./internal/ internal/
+COPY ./internal internal
 
 RUN go install mvdan.cc/gofumpt@latest
 
 ENV GO111MODULE=on
 ENV GOOS=linux
 ENV GOARCH=amd64
-ENV GOOOS=linux
 
 RUN go mod tidy -compat=${GOLANG_VERSION}
 RUN go mod download
 RUN gofumpt -l -w ./main.go
-RUN go build -a -v -o /app/bin/${BIN_NAME} main.go
+RUN go build -a -v -o /${BIN_NAME} main.go && chmod +x /${BIN_NAME}
 
-FROM alpine:latest
-
-ARG BIN_NAME=grpc_client
-
-WORKDIR /root/
-
-COPY --from=builder /app/bin/${BIN_NAME} ./grpc_client
-
-ENTRYPOINT ["/root/grpc_client"]
+ENTRYPOINT ["/grpc_client"]
 
 CMD ["-addr", "localhost:50051", "-name", "test"]

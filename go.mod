@@ -1,13 +1,10 @@
-module hello-grpc
+module golang.chux.dev/grpc/helloworld
 
 go 1.22.7
-
-toolchain go1.22.8
 
 require (
 	github.com/google/uuid v1.6.0
 	google.golang.org/grpc v1.67.1
-	google.golang.org/grpc/examples v0.0.0-20241010100425-b850ea533f74
 	google.golang.org/protobuf v1.34.2
 )
 

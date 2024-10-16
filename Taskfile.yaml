@@ -1,0 +1,91 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "3"
+
+dotenv: [".env"]
+
+tasks:
+  clean:
+    cmds:
+      - find . -type f -name '*_string.go' -print0 | xargs -0 rm -vf
+      - find $GOLANG_PB_OUTPUT_DIR -type f -name '*.pb.go' -print0 | xargs -0 rm -vf
+      - rm -rvf {{.USER_WORKING_DIR}}/$GOLANG_PB_OUTPUT_DIR/*
+      - rm -rvf {{.USER_WORKING_DIR}}/$WEB_PB_OUTPUT_DIR/*_pb.js
+
+  proto-gen:
+    vars:
+      PROTO_FILES:
+        sh: find {{.USER_WORKING_DIR}}/$PB_INPUT_DIR -maxdepth 1 -name '*.proto' | xargs basename | tr '\n' ' '
+    cmds:
+      - >-
+        docker run --user=$USER_ID
+        -v {{.USER_WORKING_DIR}}:/defs
+        -e "GOOGLE_PROTOBUF_MIN_LOG_LEVEL=LOGLEVEL_INFO"
+        namely/protoc-all -d $PB_INPUT_DIR
+        -o $GOLANG_PB_OUTPUT_DIR
+        -l go --go-source-relative
+      - >-
+        docker run --user=$USER_ID
+        -v {{.USER_WORKING_DIR}}:/defs
+        -e "GOOGLE_PROTOBUF_MIN_LOG_LEVEL=LOGLEVEL_INFO"
+        --entrypoint=protoc
+        namely/protoc-all
+        -I="/defs/$PB_INPUT_DIR" helloworld.proto
+        --js_out="import_style=commonjs:/defs/$WEB_PB_OUTPUT_DIR"
+        --grpc-web_out="import_style=commonjs,mode=grpcwebtext:/defs/$WEB_PB_OUTPUT_DIR"
+        {{.PROTO_FILES}}
+
+  docker-build:
+    cmds:
+      - task: clean
+      - task: proto-gen
+      - >-
+        docker buildx build
+        --platform=linux/amd64
+        --no-cache --file=Dockerfile.server
+        --build-arg="BIN_NAME=$SERVER_BIN_NAME"
+        --tag="$IMAGE_NAME-server:latest"
+        {{.USER_WORKING_DIR}}
+      - >-
+        docker buildx build --no-cache
+        --platform=linux/amd64
+        --file=Dockerfile.client
+        --build-arg="BIN_NAME=$CLIENT_BIN_NAME"
+        --tag="$IMAGE_NAME-client:latest"
+        {{.USER_WORKING_DIR}}
+      - >-
+        docker build --no-cache
+        --file=Dockerfile.envoy
+        --build-arg="GRPC_HOST={{.GRPC_HOST}}"
+        --build-arg="GRPC_PORT={{.GRPC_PORT}}"
+        --tag="$IMAGE_NAME-envoy:latest"
+        {{.USER_WORKING_DIR}}
+      - >-
+        docker build --no-cache
+        --file=Dockerfile.web
+        --tag="$IMAGE_NAME-web:latest"
+        {{.USER_WORKING_DIR}}
+    sources:
+      - ./server.go
+      - ./client.go
+      - ./go.mod
+      - ./go.sum
+      - ./web/client.js
+      - ./web/package.json
+      - envoy.yaml
+      - Dockerfile.envoy
+      - Dockerfile.client
+      - Dockerfile.server
+      - Dockerfile.web

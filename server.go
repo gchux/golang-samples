@@ -28,9 +28,9 @@ import (
 	"log"
 	"net"
 
+	pb "golang.chux.dev/grpc/helloworld/internal/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc/status"
 )
 

@@ -33,10 +33,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	pb "golang.chux.dev/grpc/helloworld/internal/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc/metadata"
 	grpcMetadata "google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"

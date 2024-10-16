@@ -1,0 +1,24 @@
+FROM node:18.16.0-alpine AS builder
+
+RUN mkdir -p  /app
+
+WORKDIR /app
+
+COPY ./web/package.json .
+COPY ./web/src/*.js .
+
+RUN npm install
+RUN npx webpack /app/client.js
+
+FROM python:3-slim
+
+RUN mkdir /app
+
+WORKDIR /app
+
+COPY --from=builder /app/dist/main.js .
+COPY ./web/index.html .
+
+EXPOSE 8080
+
+CMD ["python3", "-m", "http.server", "8080"]

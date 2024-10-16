@@ -68,9 +68,7 @@ tasks:
       - >-
         docker build --no-cache
         --file=Dockerfile.envoy
-        --build-arg="GRPC_HOST={{.GRPC_HOST}}"
-        --build-arg="GRPC_PORT={{.GRPC_PORT}}"
-        --tag="$IMAGE_NAME-envoy:latest"
+        --tag="$IMAGE_NAME-web-proxy:latest"
         {{.USER_WORKING_DIR}}
       - >-
         docker build --no-cache

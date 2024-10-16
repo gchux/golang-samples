@@ -1,15 +1,8 @@
 FROM envoyproxy/envoy:v1.22.0
 
-ARG GRPC_HOST='localhost'
-ARG GRPC_PORT='8080'
-
 WORKDIR /etc/envoy
 
 COPY ./envoy.yaml ./envoy.yaml
-RUN sed -i -e "s|subst\.GRPC_HOST|${GRPC_HOST}|g" \
-    -e "s|subst\.GRPC_PORT|${GRPC_PORT}|g" \
-    /etc/envoy/envoy.yaml
+COPY ./start_envoy /start_grpc_web_proxy
 
-EXPOSE 8000
-
-CMD ["envoy", "-c", "/etc/envoy/envoy.yaml", "--log-level", "debug"]
+CMD ["/start_grpc_web_proxy"]

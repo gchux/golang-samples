@@ -1,6 +1,9 @@
 # Go Hello World gRPC server & client
 
-source code: https://github.com/grpc/grpc-go/tree/master/examples/helloworld
+sources:
+
+- https://github.com/grpc/grpc-go/tree/master/examples/helloworld
+- https://github.com/grpc/grpc-web/tree/master/net/grpc/gateway/examples/helloworld
 
 ## BUILD SERVER
 

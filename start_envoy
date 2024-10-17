@@ -1,8 +1,21 @@
 #!/bin/bash
 
+MDS_URL='http://metadata.google.internal/computeMetadata/v1'
+MDS_CURL="curl -s -H Metadata-Flavor:Google ${MDS_URL}"
+
+export PROJECT_ID=$(${MDS_CURL}/project/project-id)
+export PROJECT_NUM=$(${MDS_CURL}/project/numeric-project-id)
+_GCP_REGION=$(${MDS_CURL}/instance/region)
+export GCP_REGION=${_GCP_REGION##*/}
+
+export PROXY_DOMAIN="${K_SERVICE}-${PROJECT_NUM}.${GCP_REGION}.run.app"
+
 printenv
 
 sed -e "s|subst\.PORT|${PORT}|g" \
+    -e "s|subst\.PROXY_DOMAIN|${PROXY_DOMAIN}|g" \
+    -e "s|subst\.GRPC_AUDIENCE|${GRPC_AUDIENCE}|g" \
+    -e "s|subst\.GRPC_HOST_IP|${GRPC_HOST_IP}|g" \
     -e "s|subst\.GRPC_HOST|${GRPC_HOST}|g" \
     -e "s|subst\.GRPC_PORT|${GRPC_PORT}|g" \
     /etc/envoy/envoy.yaml > /tmp/envoy.yaml

@@ -1,8 +1,9 @@
-FROM envoyproxy/envoy:v1.22.0
+FROM envoyproxy/envoy:v1.32.0
 
 WORKDIR /etc/envoy
 
 COPY ./envoy.yaml ./envoy.yaml
 COPY ./start_envoy /start_grpc_web_proxy
+COPY ./ssl/grpc_server.crt /grpc_server.crt
 
 CMD ["/start_grpc_web_proxy"]

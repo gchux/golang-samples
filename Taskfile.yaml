@@ -47,6 +47,19 @@ tasks:
         --grpc-web_out="import_style=commonjs,mode=grpcwebtext:/defs/$WEB_PB_OUTPUT_DIR"
         {{.PROTO_FILES}}
 
+  certs-gen:
+    cmds:
+      - >-
+        docker run -it --rm
+        -v {{.USER_WORKING_DIR}}/ssl:/tmp
+        alpine/openssl 
+        req -x509 -newkey rsa:2048
+        -sha256 -nodes -days 3650
+        -keyout /tmp/grpc_server.key
+        -out /tmp/grpc_server.crt
+        -subj "/CN=grpc-server.local"
+        -addext "subjectAltName=DNS:grpc-server.local,IP:{{.GRPC_HOST_IP}}"
+
   docker-build:
     cmds:
       - task: clean

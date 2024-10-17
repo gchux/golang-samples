@@ -12,5 +12,6 @@ curl --raw -D - -iv \
   --http1.1 -XPOST -H "Authorization: Bearer ${ID_TOKEN}" \
   -H 'Accept: application/grpc-web-text' \
   -H 'Content-Type: application/grpc-web-text' \
-  -H 'X-Grpc-Web: 1' "${ENDPOINT}" \
+  -H 'X-Grpc-Web: 1' \
+  "${ENDPOINT}" \
   --data 'AAAAAAYKBHRlc3Q='

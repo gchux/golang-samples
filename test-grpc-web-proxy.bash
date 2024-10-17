@@ -13,5 +13,5 @@ curl --raw -D - -iv \
   -H 'Accept: application/grpc-web-text' \
   -H 'Content-Type: application/grpc-web-text' \
   -H 'X-Grpc-Web: 1' \
-  "${ENDPOINT}" \
-  --data 'AAAAAAYKBHRlc3Q='
+  --data 'AAAAAAYKBHRlc3Q=' \
+  "${ENDPOINT}"

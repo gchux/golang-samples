@@ -38,7 +38,7 @@ The **gRPC WEB proxy** proxy requires the following environment variables:
 
 ## BUILD using [Taskfile](https://github.com/go-task/task)
 
-> ![TIP]
+> [!TIP]
 > This is the simplest approach to build ALL images
 
 ```sh

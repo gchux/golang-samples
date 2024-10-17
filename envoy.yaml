@@ -109,8 +109,9 @@ static_resources:
             url: subst.GRPC_AUDIENCE
     - name: gcp_authn
       type: STATIC
+      # type: STRICT_DNS
+      # dns_lookup_family: V4_ONLY
       connect_timeout: 5s
-      dns_lookup_family: V4_ONLY
       load_assignment:
         cluster_name: "gcp_authn"
         endpoints:

@@ -7,5 +7,4 @@ curlie --raw --http1.1 -ivL -XPOST \
   -H 'Content-Type: application/grpc-web-text' \
   -H 'X-Grpc-Web: 1' \
   'https://helloworld-grpc-web-proxy-114063878166.us-west4.run.app/helloworld.Greeter/SayHello' \
-  --data 'AAAAADoSFkFtaW4gTmFzaXJpIFhlbm9uIEdSUEMYNjoePHNjcmlwdD5hbGVydChvcmlnaW4pPC9zY3JpcHQ+' \
-  -D -
+  --data 'AAAAAAYKBHRlc3Q=' -D -

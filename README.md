@@ -108,7 +108,8 @@ docker run -it --rm grpc-hello-client:latest \
 ### gRPC WEB PROXY
 
 ```sh
-gidcurl --raw --http1.1 -iv -XPOST \
+curl --raw --http1.1 -iv -XPOST \
+  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H 'User-Agent: grpc-web-javascript/0.1' \
   -H 'Accept: application/grpc-web-text' \
   -H 'Content-Type: application/grpc-web-text' \

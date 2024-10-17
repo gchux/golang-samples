@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ID_TOKEN="$(gcloud auth print-identity-token | tr -d '\n')"
-ENDPOINT='https://helloworld-grpc-web-proxy-114063878166.us-west4.run.app/helloworld.Greeter/SayHello'
+ENDPOINT='https://helloworld-grpc-web-proxy-${PROJECT_NUMBER}.${GCP_REGION}.run.app/helloworld.Greeter/SayHello'
 
 curl --raw -D - -iv \
   --http1.1 -XOPTIONS -H "Authorization: Bearer ${ID_TOKEN}" \

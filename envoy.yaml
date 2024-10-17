@@ -15,6 +15,7 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
                 codec_type: HTTP1
+                stream_idle_timeout: 30s
                 route_config:
                   name: local_route
                   request_headers_to_remove:
@@ -73,8 +74,12 @@ static_resources:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           explicit_http_config:
-            http2_protocol_options: {}
-      lb_policy: ROUND_ROBIN
+            http2_protocol_options:
+              connection_keepalive:
+                interval: 300s
+                timeout: 5s
+                connection_idle_interval: 60s
+      # lb_policy: ROUND_ROBIN
       # win/mac hosts: Use address: host.docker.internal instead of address: localhost in the line below
       load_assignment:
         cluster_name: cluster_0

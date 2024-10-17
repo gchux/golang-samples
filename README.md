@@ -95,7 +95,7 @@ See Cloud Run service deployment docs: https://cloud.google.com/run/docs/deployi
 
 When using the gRPC WEB proxy, the gRPC server must be served via [Cloud Load Balancing and Serverless NEG](https://cloud.google.com/load-balancing/docs/negs/serverless-neg-concepts)
 
-## USE gRPC CLIENT
+## USE gRPC CLIENTS
 
 ### gRPC CLI CLIENT
 
@@ -114,7 +114,7 @@ curl --raw --http1.1 -iv -XPOST \
   -H 'Accept: application/grpc-web-text' \
   -H 'Content-Type: application/grpc-web-text' \
   -H 'X-Grpc-Web: 1' \
-  --data-binary @hello-request.pb.bin \
+  --data 'AAAAAAYKBHRlc3Q=' \
   "https://helloworld-grpc-web-proxy-${PROJECT_NUMBER}.${GCP_REGION}.run.app/helloworld.Greeter/SayHello' \
   -D -
 ```
@@ -125,4 +125,23 @@ curl --raw --http1.1 -iv -XPOST \
 grpcurl -vv -proto helloworld.proto -d '{"name":"test"}' \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   "${SERVICE_NAME}-${PROJECT_NUMBER}.${REGION}.run.app:443" helloworld.Greeter/SayHello
+```
+
+## CREATE gRPC WEB PAYLOADS
+
+To create gRPC WEB compatible payloads, you'll need to create PROTO messages of type `helloworld.HelloRequest`
+and encode them according to the [specification](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md):
+
+1. Use the provided sample proto `assets/hello-request.pb.def` to create your own `helloworld.HelloRequest`.
+
+   - this file was created using [protoscope](https://github.com/protocolbuffers/protoscope) on a binary proto.
+
+2. Update the file to change the literal `test` for any other word ot text.
+
+3. Use [`grpc-coder.py`](https://github.com/nxenon/grpc-pentest-suite/blob/main/grpc-coder.py) to encode the payload:
+
+```sh
+cp assets/hello_request.pb.def assets/custom_hello_request.pb.def
+vim custom_hello_request.pb.web_txt # edit the content: this is the name to be greeted
+cat assets/custom_hello_request.pb.def | python3 grpc-coder.py --encode --type grpc-web-text
 ```
